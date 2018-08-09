@@ -7,26 +7,62 @@ var bot = linebot({
     channelAccessToken: 'ZKsloqKahDnLX5D218JXiK6k2k6pRAaKm10bHQiXXQWWbAmQAyDYMcir2gPqbfvCChXsQEWQr4uPphvpcA8J1lOWnMcsB9LlgvurrJIUh74AOGxz2IUzmphHjITT1YK2/PeLGw3vftInfqYZ6qaWdgdB04t89/1O/w1cDnyilFU='
 });
 
-const commandList = [
-    { cmd: "order start", msg: "------ 開始點餐 ------" },
-    { cmd: "order end", msg: "------ 點餐結束 ------" },
-    { cmd: "order list", msg: "------ 點餐明細 ------" },
-];
+var orderStatus = false;
+var orderList = [];
 
-var commandMode = function(cmd) {
-    var filterItem = commandList.filter(function(item) {
-        return item.cmd === cmd;
-    });
-    return filterItem[0].msg;
+const commandList = {
+    "start": "------ 開始點餐 ------\n ex: order Felix 芒果冰沙 無糖去冰",
+    "end": "------ 點餐結束 ------",
+    "list": "------ 點餐明細 ------",
+    "help": "------ 指令列表 ------\n order start //開始點餐\n order end //點餐結束\n order list //列出點餐明細"
 };
 
 bot.on('message', function(event) {
-    console.log(event); //把收到訊息的 event 印出來看看
+    // console.log(event); //把收到訊息的 event 印出來看看
     var replyMsg = "";
+    var msg = "";
     if(event.message.type = 'text') {
-        var msg = event.message.text;
-        if(Object.keys(commandList).indexOf(msg) !== -1) {
-            replyMsg = commandMode(msg);
+        if(event.message.text.includes("order")) {
+            msg = event.message.text.split(" ");
+        }
+        if(msg[0] === "order") {
+            if(commandList.hasOwnProperty(msg[1])) {
+                switch(msg[1]) {
+                    case "start":
+                        if(!orderStatus) {
+                            replyMsg = commandList[msg[1]];
+                        }
+                        orderStatus = true;
+                        break;
+                    case "end":
+                        if(orderStatus) {
+                            replyMsg += commandList[msg[1]]+"\n";
+                            for(var i=0;i<orderList.length;i++) {
+                                replyMsg += orderList[i]+"\n";
+                            }
+                        }
+                        orderStatus = false;
+                        orderList = [];
+                        break;
+                    case "list":
+                        if(orderStatus) {
+                            console.log(orderList);
+                            replyMsg += commandList[msg[1]]+"\n";
+                            for(var i=0;i<orderList.length;i++) {
+                                replyMsg += orderList[i]+"\n";
+                            }
+                        }
+                        break;
+                    default:
+                        replyMsg = commandList[msg[1]];
+                }
+            }else{
+                if(orderStatus) {
+                    console.log(`${msg[1]} ${msg[2]} ${msg[3] ? msg[3] : ""}`);
+                    orderList.push(`${msg[1]} ${msg[2]} ${msg[3] ? msg[3] : ""}`);
+                    replyMsg = msg[1]+" Order Done";
+                }
+            }
         }
     }
     event.reply(replyMsg).then(function(data) {
